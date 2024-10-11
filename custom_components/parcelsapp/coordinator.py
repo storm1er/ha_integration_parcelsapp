@@ -1,12 +1,7 @@
-"""DataUpdateCoordinator for parcelsapp."""
-
-from __future__ import annotations
-
-from datetime import timedelta
+from datetime import datetime, timedelta
 import logging
 import time
 import json
-import datetime
 import aiohttp
 import async_timeout
 
@@ -23,7 +18,6 @@ from .const import DOMAIN, DEFAULT_SCAN_INTERVAL
 
 _LOGGER = logging.getLogger(__name__)
 
-
 class ParcelsAppCoordinator(DataUpdateCoordinator):
     """My custom coordinator."""
 
@@ -39,24 +33,6 @@ class ParcelsAppCoordinator(DataUpdateCoordinator):
         self.destination_country = entry.data["destination_country"]
         self.session = aiohttp.ClientSession()
         self.tracked_packages = {}
-
-    async def _async_update_data(self):
-        """Fetch data from API endpoint."""
-        try:
-            start_time = time.time()
-            async with async_timeout.timeout(10):
-                async with self.session.get("https://parcelsapp.com/") as response:
-                    await response.text()  # Ensure the response is fully received
-                    response.raise_for_status()
-                    end_time = time.time()
-                    response_time = end_time - start_time
-                    return {
-                        "status": response.status == 200,
-                        "response_time": response_time,
-                        "response_code": response.status,
-                    }
-        except aiohttp.ClientError as err:
-            raise UpdateFailed(f"Error communicating with API: {err}")
 
     async def track_package(self, tracking_id: str) -> None:
         """Track a new package or update an existing one."""
