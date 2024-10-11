@@ -2,7 +2,7 @@
     "domain": "parcelsapp",
     "name": "Parcels App",
     "config_flow": true,
-    "documentation": "https://www.example.com",
+    "documentation": "https://github.com/storm1er/ha_integration_parcelsapp",
     "requirements": [
         "aiohttp"
     ],
