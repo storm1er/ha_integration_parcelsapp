@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 import logging
 import time
 import json
+import os
 import aiohttp
 import async_timeout
 
@@ -13,6 +14,7 @@ from homeassistant.helpers.update_coordinator import (
 )
 from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.helpers.storage import Store
 
 from .const import DOMAIN, DEFAULT_SCAN_INTERVAL
 
@@ -33,6 +35,18 @@ class ParcelsAppCoordinator(DataUpdateCoordinator):
         self.destination_country = entry.data["destination_country"]
         self.session = aiohttp.ClientSession()
         self.tracked_packages = {}
+        self.store = Store(hass, 1, f"{DOMAIN}_{entry.entry_id}_tracked_packages")
+        self._load_tracked_packages()
+
+    def _load_tracked_packages(self):
+        """Load tracked packages from persistent storage."""
+        stored_data = self.store.async_load()
+        if stored_data:
+            self.tracked_packages = stored_data
+
+    async def _save_tracked_packages(self):
+        """Save tracked packages to persistent storage."""
+        await self.store.async_save(self.tracked_packages)
 
     async def track_package(self, tracking_id: str) -> None:
         """Track a new package or update an existing one."""
@@ -101,6 +115,7 @@ class ParcelsAppCoordinator(DataUpdateCoordinator):
             _LOGGER.error(
                 f"Failed to parse API response for tracking ID {tracking_id}. Response: {response_text}"
             )
+        await self._save_tracked_packages()
 
     async def update_package(self, tracking_id: str, uuid: str | None) -> None:
         """Update a single package."""
@@ -108,6 +123,7 @@ class ParcelsAppCoordinator(DataUpdateCoordinator):
             # For packages without UUID, we need to use the track_package method again
             await self.track_package(tracking_id)
             return
+        await self._save_tracked_packages()
 
         url = f"https://parcelsapp.com/api/v3/shipments/tracking?uuid={uuid}&apiKey={self.api_key}"
 

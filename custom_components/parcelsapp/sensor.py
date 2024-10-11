@@ -32,6 +32,10 @@ class ParcelsAppTrackingSensor(SensorEntity):
         self._attr_unique_id = f"{DOMAIN}_tracking_{tracking_id}"
         self._attr_name = name or f"Parcel {tracking_id}"
 
+        # Add the name to the tracked_packages data
+        if self.tracking_id in self.coordinator.tracked_packages:
+            self.coordinator.tracked_packages[self.tracking_id]["name"] = self._attr_name
+
     @property
     def state(self) -> str | None:
         """Return the state of the sensor."""

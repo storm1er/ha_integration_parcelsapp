@@ -29,6 +29,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     hass.services.async_register(DOMAIN, SERVICE_TRACK_PACKAGE, handle_track_package)
 
+    # Load existing tracked packages and create sensors for them
+    async_add_entities = hass.data[DOMAIN][entry.entry_id + "_add_entities"]
+    for tracking_id, package_data in coordinator.tracked_packages.items():
+        new_sensor = ParcelsAppTrackingSensor(coordinator, tracking_id, package_data.get("name"))
+        async_add_entities([new_sensor], True)
+
     return True
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
