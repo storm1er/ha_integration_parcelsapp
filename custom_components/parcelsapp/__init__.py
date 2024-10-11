@@ -9,7 +9,6 @@ from .sensor import ParcelsAppTrackingSensor
 
 PLATFORMS = [Platform.BINARY_SENSOR, Platform.SENSOR, Platform.BUTTON]
 
-
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     coordinator = ParcelsAppCoordinator(hass, entry)
     await coordinator.async_config_entry_first_refresh()
@@ -20,17 +19,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     async def handle_track_package(call: ServiceCall) -> None:
         tracking_id = call.data["tracking_id"]
+        name = call.data.get("name")
         await coordinator.track_package(tracking_id)
 
         # Create and add new sensor
         async_add_entities = hass.data[DOMAIN][entry.entry_id + "_add_entities"]
-        new_sensor = ParcelsAppTrackingSensor(coordinator, tracking_id)
+        new_sensor = ParcelsAppTrackingSensor(coordinator, tracking_id, name)
         async_add_entities([new_sensor], True)
 
     hass.services.async_register(DOMAIN, SERVICE_TRACK_PACKAGE, handle_track_package)
 
     return True
-
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if unload_ok := await hass.config_entries.async_unload_platforms(entry, PLATFORMS):

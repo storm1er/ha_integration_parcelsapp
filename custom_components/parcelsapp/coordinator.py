@@ -6,7 +6,7 @@ from datetime import timedelta
 import logging
 import time
 import json
-
+import datetime
 import aiohttp
 import async_timeout
 
@@ -89,6 +89,7 @@ class ParcelsAppCoordinator(DataUpdateCoordinator):
                         "status": "pending",
                         "uuid": data["uuid"],
                         "message": "Tracking initiated",
+                        "last_updated": datetime.now().isoformat()
                     }
                 elif "shipments" in data and data["shipments"]:
                     # Already tracked parcel
@@ -109,6 +110,7 @@ class ParcelsAppCoordinator(DataUpdateCoordinator):
                             ),
                             None,
                         ),
+                        "last_updated": datetime.now().isoformat()
                     }
                 else:
                     _LOGGER.error(
@@ -157,6 +159,7 @@ class ParcelsAppCoordinator(DataUpdateCoordinator):
                             ),
                             None,
                         ),
+                        "last_updated": datetime.now().isoformat()
                     }
                 else:
                     _LOGGER.debug(f"Tracking data not yet available for {tracking_id}")

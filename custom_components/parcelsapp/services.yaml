@@ -9,3 +9,10 @@ track_package:
       required: true
       selector:
         text:
+    name:
+      name: Sensor Name
+      description: Optional name for the sensor (default is 'Parcel <TrackingID>')
+      example: "My Amazon Package"
+      required: false
+      selector:
+        text:

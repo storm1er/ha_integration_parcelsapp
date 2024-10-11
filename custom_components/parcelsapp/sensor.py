@@ -6,7 +6,6 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from .const import DOMAIN
 from .coordinator import ParcelsAppCoordinator
 
-
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
@@ -23,16 +22,15 @@ async def async_setup_entry(
     ]
     async_add_entities(entities, True)
 
-
 class ParcelsAppTrackingSensor(SensorEntity):
     """Representation of a Parcels App tracking sensor."""
 
-    def __init__(self, coordinator: ParcelsAppCoordinator, tracking_id: str) -> None:
+    def __init__(self, coordinator: ParcelsAppCoordinator, tracking_id: str, name: str = None) -> None:
         """Initialize the sensor."""
         self.coordinator = coordinator
         self.tracking_id = tracking_id
         self._attr_unique_id = f"{DOMAIN}_tracking_{tracking_id}"
-        self._attr_name = f"Parcel {tracking_id}"
+        self._attr_name = name or f"Parcel {tracking_id}"
 
     @property
     def state(self) -> str | None:
@@ -42,10 +40,25 @@ class ParcelsAppTrackingSensor(SensorEntity):
         return None
 
     @property
+    def icon(self) -> str:
+        """Return the icon of the sensor."""
+        status = self.state
+        if status == "delivered":
+            return "mdi:package-variant"
+        elif status == "pickup":
+            return "mdi:package-variant-closed-check"
+        else:
+            return "mdi:package-variant-closed"
+
+    @property
     def extra_state_attributes(self) -> dict[str, str]:
         """Return the state attributes."""
         if self.tracking_id in self.coordinator.tracked_packages:
-            return self.coordinator.tracked_packages[self.tracking_id]
+            attributes = self.coordinator.tracked_packages[self.tracking_id].copy()
+            # Convert last_updated to a more readable format
+            if 'last_updated' in attributes:
+                attributes['last_updated'] = attributes['last_updated'].replace('T', ' ')
+            return attributes
         return {}
 
     @property
