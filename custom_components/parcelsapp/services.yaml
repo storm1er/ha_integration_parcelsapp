@@ -1,0 +1,11 @@
+track_package:
+  name: Track Package
+  description: Track a new package
+  fields:
+    tracking_id:
+      name: Tracking ID
+      description: The tracking ID of the package
+      example: "ABC123456789"
+      required: true
+      selector:
+        text:

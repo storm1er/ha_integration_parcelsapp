@@ -1,0 +1,16 @@
+{
+    "domain": "parcelsapp",
+    "name": "Parcels App",
+    "config_flow": true,
+    "documentation": "https://www.example.com",
+    "requirements": [
+        "aiohttp"
+    ],
+    "ssdp": [],
+    "zeroconf": [],
+    "homekit": {},
+    "dependencies": [],
+    "codeowners": [],
+    "iot_class": "cloud_polling",
+    "version": "0.1.0"
+}
