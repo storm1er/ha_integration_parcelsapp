@@ -36,13 +36,18 @@ class ParcelsAppCoordinator(DataUpdateCoordinator):
         self.session = aiohttp.ClientSession()
         self.tracked_packages = {}
         self.store = Store(hass, 1, f"{DOMAIN}_{entry.entry_id}_tracked_packages")
-        self._load_tracked_packages()
 
-    def _load_tracked_packages(self):
+    async def async_init(self):
+        """Initialize the coordinator."""
+        await self._load_tracked_packages()
+
+    async def _load_tracked_packages(self):
         """Load tracked packages from persistent storage."""
-        stored_data = self.store.async_load()
+        stored_data = await self.store.async_load()
         if stored_data:
             self.tracked_packages = stored_data
+        else:
+            self.tracked_packages = {}
 
     async def _save_tracked_packages(self):
         """Save tracked packages to persistent storage."""
