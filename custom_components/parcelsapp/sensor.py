@@ -2,6 +2,7 @@ from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
 from .const import DOMAIN
 from .coordinator import ParcelsAppCoordinator
@@ -12,15 +13,23 @@ async def async_setup_entry(
     """Set up the sensor platform."""
     coordinator = hass.data[DOMAIN][entry.entry_id]
 
-    # Store async_add_entities function for later use
-    hass.data[DOMAIN][entry.entry_id + "_add_entities"] = async_add_entities
-
     # Add existing tracked packages
-    entities = [
-        ParcelsAppTrackingSensor(coordinator, tracking_id)
-        for tracking_id in coordinator.tracked_packages
-    ]
+    entities = []
+    for tracking_id, package_data in coordinator.tracked_packages.items():
+        entities.append(ParcelsAppTrackingSensor(coordinator, tracking_id, package_data.get("name")))
     async_add_entities(entities, True)
+
+    # Listen for new packages to add
+    async def handle_new_package(tracking_id: str):
+        package_data = coordinator.tracked_packages.get(tracking_id)
+        if package_data:
+            new_sensor = ParcelsAppTrackingSensor(coordinator, tracking_id, package_data.get("name"))
+            async_add_entities([new_sensor], True)
+
+    hass.data.setdefault(DOMAIN, {})
+    hass.data[DOMAIN][entry.entry_id + "_unsub_dispatcher"] = async_dispatcher_connect(
+        hass, f"{DOMAIN}_new_package", handle_new_package
+    )
 
 class ParcelsAppTrackingSensor(SensorEntity):
     """Representation of a Parcels App tracking sensor."""
@@ -30,11 +39,8 @@ class ParcelsAppTrackingSensor(SensorEntity):
         self.coordinator = coordinator
         self.tracking_id = tracking_id
         self._attr_unique_id = f"{DOMAIN}_tracking_{tracking_id}"
-        self._attr_name = name or f"Parcel {tracking_id}"
-
-        # Add the name to the tracked_packages data
-        if self.tracking_id in self.coordinator.tracked_packages:
-            self.coordinator.tracked_packages[self.tracking_id]["name"] = self._attr_name
+        stored_name = self.coordinator.tracked_packages.get(tracking_id, {}).get("name")
+        self._attr_name = name or stored_name or f"Parcel {tracking_id}"
 
     @property
     def state(self) -> str | None:

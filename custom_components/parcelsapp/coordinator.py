@@ -2,17 +2,14 @@ from datetime import datetime, timedelta
 import logging
 import time
 import json
-import os
 import aiohttp
 import async_timeout
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import (
-    CoordinatorEntity,
     DataUpdateCoordinator,
     UpdateFailed,
 )
-from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.storage import Store
 
@@ -21,10 +18,10 @@ from .const import DOMAIN, DEFAULT_SCAN_INTERVAL
 _LOGGER = logging.getLogger(__name__)
 
 class ParcelsAppCoordinator(DataUpdateCoordinator):
-    """My custom coordinator."""
+    """Custom coordinator for Parcels App."""
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
-        """Initialize my coordinator."""
+        """Initialize the coordinator."""
         super().__init__(
             hass,
             _LOGGER,
@@ -53,7 +50,7 @@ class ParcelsAppCoordinator(DataUpdateCoordinator):
         """Save tracked packages to persistent storage."""
         await self.store.async_save(self.tracked_packages)
 
-    async def track_package(self, tracking_id: str) -> None:
+    async def track_package(self, tracking_id: str, name: str = None) -> None:
         """Track a new package or update an existing one."""
         url = "https://parcelsapp.com/api/v3/shipments/tracking"
         payload = json.dumps(
@@ -80,16 +77,18 @@ class ParcelsAppCoordinator(DataUpdateCoordinator):
 
                 if "uuid" in data:
                     # New tracking request
-                    self.tracked_packages[tracking_id] = {
+                    package_data = {
                         "status": "pending",
                         "uuid": data["uuid"],
                         "message": "Tracking initiated",
-                        "last_updated": datetime.now().isoformat()
+                        "last_updated": datetime.now().isoformat(),
+                        "name": name or self.tracked_packages.get(tracking_id, {}).get("name")
                     }
+                    self.tracked_packages[tracking_id] = package_data
                 elif "shipments" in data and data["shipments"]:
                     # Already tracked parcel
                     shipment = data["shipments"][0]
-                    self.tracked_packages[tracking_id] = {
+                    package_data = {
                         "status": shipment.get("status", "unknown"),
                         "uuid": None,
                         "message": shipment.get("lastState", {}).get(
@@ -105,8 +104,10 @@ class ParcelsAppCoordinator(DataUpdateCoordinator):
                             ),
                             None,
                         ),
-                        "last_updated": datetime.now().isoformat()
+                        "last_updated": datetime.now().isoformat(),
+                        "name": name or self.tracked_packages.get(tracking_id, {}).get("name")
                     }
+                    self.tracked_packages[tracking_id] = package_data
                 else:
                     _LOGGER.error(
                         f"Unexpected API response for tracking ID {tracking_id}. Response: {response_text}"
@@ -128,7 +129,6 @@ class ParcelsAppCoordinator(DataUpdateCoordinator):
             # For packages without UUID, we need to use the track_package method again
             await self.track_package(tracking_id)
             return
-        await self._save_tracked_packages()
 
         url = f"https://parcelsapp.com/api/v3/shipments/tracking?uuid={uuid}&apiKey={self.api_key}"
 
@@ -139,7 +139,8 @@ class ParcelsAppCoordinator(DataUpdateCoordinator):
 
                 if data.get("done") and data.get("shipments"):
                     shipment = data["shipments"][0]
-                    self.tracked_packages[tracking_id] = {
+                    existing_name = self.tracked_packages.get(tracking_id, {}).get("name")
+                    package_data = {
                         "status": shipment.get("status", "unknown"),
                         "uuid": uuid,
                         "message": shipment.get("lastState", {}).get(
@@ -156,12 +157,15 @@ class ParcelsAppCoordinator(DataUpdateCoordinator):
                             ),
                             None,
                         ),
-                        "last_updated": datetime.now().isoformat()
+                        "last_updated": datetime.now().isoformat(),
+                        "name": existing_name
                     }
+                    self.tracked_packages[tracking_id] = package_data
                 else:
                     _LOGGER.debug(f"Tracking data not yet available for {tracking_id}")
         except aiohttp.ClientError as err:
             _LOGGER.error(f"Error updating package {tracking_id}: {err}")
+        await self._save_tracked_packages()
 
     async def update_tracked_packages(self) -> None:
         """Update all tracked packages."""

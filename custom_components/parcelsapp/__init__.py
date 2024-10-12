@@ -1,11 +1,10 @@
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, ServiceCall
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.dispatcher import async_dispatcher_send
 
 from .const import DOMAIN, SERVICE_TRACK_PACKAGE
 from .coordinator import ParcelsAppCoordinator
-from .sensor import ParcelsAppTrackingSensor
 
 PLATFORMS = [Platform.BINARY_SENSOR, Platform.SENSOR, Platform.BUTTON]
 
@@ -21,24 +20,21 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     async def handle_track_package(call: ServiceCall) -> None:
         tracking_id = call.data["tracking_id"]
         name = call.data.get("name")
-        await coordinator.track_package(tracking_id)
+        await coordinator.track_package(tracking_id, name)
 
-        # Create and add new sensor
-        async_add_entities = hass.data[DOMAIN][entry.entry_id + "_add_entities"]
-        new_sensor = ParcelsAppTrackingSensor(coordinator, tracking_id, name)
-        async_add_entities([new_sensor], True)
+        # Notify sensor platform to add the new entity
+        async_dispatcher_send(hass, f"{DOMAIN}_new_package", tracking_id)
 
     hass.services.async_register(DOMAIN, SERVICE_TRACK_PACKAGE, handle_track_package)
-
-    # Load existing tracked packages and create sensors for them
-    async_add_entities = hass.data[DOMAIN][entry.entry_id + "_add_entities"]
-    for tracking_id, package_data in coordinator.tracked_packages.items():
-        new_sensor = ParcelsAppTrackingSensor(coordinator, tracking_id, package_data.get("name"))
-        async_add_entities([new_sensor], True)
 
     return True
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    if unload_ok := await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
+    # Disconnect dispatcher listeners
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id)
+        unsub_dispatcher = hass.data[DOMAIN].pop(entry.entry_id + "_unsub_dispatcher", None)
+        if unsub_dispatcher:
+            unsub_dispatcher()
     return unload_ok
