@@ -8,24 +8,32 @@ A Home Assistant integration for [ParcelsApp.com](https://parcelsapp.com/), a un
 
 ### Binary Sensor
 
-| Sensor             | Description                                              |
-| ------------------ | -------------------------------------------------------- |
-| Parcels App Status | Monitors the availability of the ParcelsApp.com website  |
+| Sensor             | Description                                             |
+| ------------------ | ------------------------------------------------------- |
+| Parcels App Status | Monitors the availability of the ParcelsApp.com website |
 
 ### Button
 
-| Button                       | Description                                                     |
-| ---------------------------- | --------------------------------------------------------------- |
-| Update Parcels App Tracking  | Updates all parcels not marked as delivered or archived         |
+| Button                      | Description                                                    |
+| --------------------------- | -------------------------------------------------------------- |
+| Update Parcels App Tracking | Updates all parcels not marked as delivered or archived        |
 
-### Service
+### Services
 
-The integration provides a service called `parcelsapp.track_package`:
+The integration provides the following services:
 
-| Argument    | Required | Description                                                      |
-| ----------- | -------- | ---------------------------------------------------------------- |
-| tracking_id | Yes      | The parcel's tracking ID provided by your parcel/delivery company|
-| name        | No       | An optional name for your parcel (used as the sensor name)       |
+#### `parcelsapp.track_package`
+
+- **Arguments:**
+  - `tracking_id` (Required): The parcel's tracking ID provided by your parcel/delivery company.
+  - `name` (Optional): An optional name for your parcel (used as the sensor name).
+
+#### `parcelsapp.remove_package`
+
+- **Arguments:**
+  - `tracking_id` (Required): The tracking ID of the package you wish to stop tracking.
+
+Use the `parcelsapp.remove_package` service to remove a package from tracking. This will delete the associated sensor and stop any further updates for that package.
 
 ### Tracking Sensor
 
@@ -60,6 +68,8 @@ During setup, you'll need to provide:
 ## Usage
 
 After configuration, you can use the `parcelsapp.track_package` service to add new packages for tracking. Each tracked package will create a new sensor entity in Home Assistant.
+
+To remove a tracked package, use the `parcelsapp.remove_package` service with the `tracking_id` of the package you wish to remove.
 
 ## Contributing
 

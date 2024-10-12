@@ -13,11 +13,15 @@ async def async_setup_entry(
     """Set up the sensor platform."""
     coordinator = hass.data[DOMAIN][entry.entry_id]
 
-    # Add existing tracked packages
     entities = []
     for tracking_id, package_data in coordinator.tracked_packages.items():
-        entities.append(ParcelsAppTrackingSensor(coordinator, tracking_id, package_data.get("name")))
+        sensor = ParcelsAppTrackingSensor(coordinator, tracking_id, package_data.get("name"))
+        entities.append(sensor)
     async_add_entities(entities, True)
+
+    # Store a reference to the added entities
+    hass.data.setdefault(DOMAIN, {})
+    hass.data[DOMAIN][entry.entry_id + "_entities"] = entities
 
     # Listen for new packages to add
     async def handle_new_package(tracking_id: str):
@@ -25,11 +29,30 @@ async def async_setup_entry(
         if package_data:
             new_sensor = ParcelsAppTrackingSensor(coordinator, tracking_id, package_data.get("name"))
             async_add_entities([new_sensor], True)
+            # Add to entities list
+            hass.data[DOMAIN][entry.entry_id + "_entities"].append(new_sensor)
 
-    hass.data.setdefault(DOMAIN, {})
-    hass.data[DOMAIN][entry.entry_id + "_unsub_dispatcher"] = async_dispatcher_connect(
+    # Listen for packages to remove
+    async def handle_remove_package(tracking_id: str):
+        entities = hass.data[DOMAIN][entry.entry_id + "_entities"]
+        entity_to_remove = None
+        for entity in entities:
+            if entity.tracking_id == tracking_id:
+                entity_to_remove = entity
+                break
+        if entity_to_remove:
+            await entity_to_remove.async_remove()
+            entities.remove(entity_to_remove)
+
+    unsub_new_package = async_dispatcher_connect(
         hass, f"{DOMAIN}_new_package", handle_new_package
     )
+    unsub_remove_package = async_dispatcher_connect(
+        hass, f"{DOMAIN}_remove_package", handle_remove_package
+    )
+
+    # Store unsub functions to clean up later
+    hass.data[DOMAIN][entry.entry_id + "_unsub_dispatcher"] = [unsub_new_package, unsub_remove_package]
 
 class ParcelsAppTrackingSensor(SensorEntity):
     """Representation of a Parcels App tracking sensor."""

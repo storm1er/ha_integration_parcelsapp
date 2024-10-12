@@ -123,6 +123,15 @@ class ParcelsAppCoordinator(DataUpdateCoordinator):
             )
         await self._save_tracked_packages()
 
+    async def remove_package(self, tracking_id: str) -> None:
+        """Remove a package from tracking."""
+        if tracking_id in self.tracked_packages:
+            del self.tracked_packages[tracking_id]
+            await self._save_tracked_packages()
+            await self.async_request_refresh()
+        else:
+            _LOGGER.warning(f"Tracking ID {tracking_id} not found in tracked packages.")
+
     async def update_package(self, tracking_id: str, uuid: str | None) -> None:
         """Update a single package."""
         if uuid is None:

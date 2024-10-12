@@ -16,3 +16,15 @@ track_package:
       required: false
       selector:
         text:
+
+remove_package:
+  name: Remove Package
+  description: Remove a tracked package
+  fields:
+    tracking_id:
+      name: Tracking ID
+      description: The tracking ID of the package to remove
+      example: "ABC123456789"
+      required: true
+      selector:
+        text:
