@@ -146,6 +146,10 @@ class ParcelsAppCoordinator(DataUpdateCoordinator):
 
     async def update_package(self, tracking_id: str, uuid: str | None, uuid_timestamp: datetime | None) -> None:
         """Update a single package."""
+        # Ensure uuid_timestamp is a datetime object
+        if isinstance(uuid_timestamp, str):
+            uuid_timestamp = datetime.fromisoformat(uuid_timestamp)
+
         # Check if UUID is expired
         uuid_expired = False
         if uuid_timestamp:
@@ -157,9 +161,19 @@ class ParcelsAppCoordinator(DataUpdateCoordinator):
             uuid_expired = True  # No UUID timestamp means we need a new UUID
 
         if uuid_expired or not uuid:
-            # Re-initiate tracking to get a new UUID
-            await self.track_package(tracking_id)
-            return
+            # Get a new UUID without overwriting existing data
+            new_uuid, new_uuid_timestamp = await self.get_new_uuid(tracking_id)
+            if new_uuid:
+                package_data = self.tracked_packages.get(tracking_id, {})
+                package_data['uuid'] = new_uuid
+                package_data['uuid_timestamp'] = new_uuid_timestamp
+                self.tracked_packages[tracking_id] = package_data
+                await self._save_tracked_packages()
+            else:
+                _LOGGER.error(f"Failed to get new UUID for {tracking_id}")
+            # Proceed with the update using the new UUID
+            uuid = new_uuid
+            uuid_timestamp = new_uuid_timestamp
 
         url = f"https://parcelsapp.com/api/v3/shipments/tracking?uuid={uuid}&apiKey={self.api_key}&language={self.language}"
 
@@ -241,3 +255,38 @@ class ParcelsAppCoordinator(DataUpdateCoordinator):
                     }
         except aiohttp.ClientError as err:
             raise UpdateFailed(f"Error communicating with API: {err}")
+
+    async def get_new_uuid(self, tracking_id: str) -> (str, datetime):
+        """Get a new UUID for a tracking ID."""
+        url = "https://parcelsapp.com/api/v3/shipments/tracking"
+        payload = json.dumps(
+            {
+                "shipments": [
+                    {
+                        "trackingId": tracking_id,
+                        "destinationCountry": self.destination_country,
+                    }
+                ],
+                "language": self.language,
+                "apiKey": self.api_key,
+            }
+        )
+        headers = {"Content-Type": "application/json"}
+
+        try:
+            async with self.session.post(
+                url, headers=headers, data=payload
+            ) as response:
+                response_text = await response.text()
+                response.raise_for_status()
+                data = json.loads(response_text)
+                if "uuid" in data:
+                    return data["uuid"], datetime.now()
+                else:
+                    _LOGGER.error(
+                        f"Unexpected API response when getting new UUID for tracking ID {tracking_id}. Response: {response_text}"
+                    )
+                    return None, None
+        except aiohttp.ClientError as err:
+            _LOGGER.error(f"Error getting new UUID for {tracking_id}: {err}")
+            return None, None

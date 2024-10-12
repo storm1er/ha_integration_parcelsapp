@@ -41,13 +41,18 @@ The `track_package` service creates a sensor for each tracked package with the f
 
 | Attribute       | Description                                                        |
 | --------------- | ------------------------------------------------------------------ |
-| status          | Current state (archived, delivered, transit, arrived, pickup)      |
-| uuid            | UUID used by the ParcelsApp API                                    |
-| message         | Latest update message from the delivery company                    |
-| origin          | Country of departure                                               |
-| carrier         | Delivery company name                                              |
-| days_in_transit | Number of days between transit and delivery                        |
-| last_updated    | Timestamp of the latest check by the integration                   |
+| status          |	Current state (archived, delivered, transit, arrived, pickup)      |
+| uuid            |	UUID used by the ParcelsApp API                                    |
+| uuid_timestamp  |	Timestamp when the UUID was obtained                               |
+| message         |	Latest update message from the delivery company                    |
+| location        |	Latest known location of the parcel                                |
+| origin          |	Country of departure                                               |
+| destination     |	Destination country or address                                     |
+| carrier         |	Delivery company name                                              |
+| days_in_transit |	Number of days the parcel has been in transit                      |
+| last_updated    |	Timestamp of the latest check by the integration                   |
+| name            |	Name given to the parcel (from the name parameter)                 |
+| tracking_id     |	The tracking ID of the parcel                                      |
 
 ## Installation
 
