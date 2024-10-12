@@ -87,15 +87,15 @@ class ParcelsAppCoordinator(DataUpdateCoordinator):
                 response.raise_for_status()
                 data = json.loads(response_text)
 
+                existing_package_data = self.tracked_packages.get(tracking_id, {})
                 if "uuid" in data:
                     # New tracking request
                     package_data = {
-                        "status": "pending",
+                        **existing_package_data,
                         "uuid": data["uuid"],
                         "uuid_timestamp": datetime.now(),
-                        "message": "Tracking initiated",
                         "last_updated": datetime.now().isoformat(),
-                        "name": name or self.tracked_packages.get(tracking_id, {}).get("name"),
+                        "name": name or existing_package_data.get("name"),
                     }
                     self.tracked_packages[tracking_id] = package_data
                 elif "shipments" in data and data["shipments"]:
@@ -103,8 +103,8 @@ class ParcelsAppCoordinator(DataUpdateCoordinator):
                     shipment = data["shipments"][0]
                     package_data = {
                         "status": shipment.get("status", "unknown"),
-                        "uuid": None,
-                        "uuid_timestamp": None,
+                        "uuid": existing_package_data.get("uuid"),
+                        "uuid_timestamp": existing_package_data.get("uuid_timestamp"),
                         "message": shipment.get("lastState", {}).get(
                             "status", "No status available"
                         ),
@@ -185,10 +185,11 @@ class ParcelsAppCoordinator(DataUpdateCoordinator):
                 if data.get("done") and data.get("shipments"):
                     shipment = data["shipments"][0]
                     existing_name = self.tracked_packages.get(tracking_id, {}).get("name")
+                    existing_package_data = self.tracked_packages.get(tracking_id, {})
                     package_data = {
                         "status": shipment.get("status", "unknown"),
-                        "uuid": None,  # UUID is no longer needed after data is retrieved
-                        "uuid_timestamp": None,
+                        "uuid": existing_package_data.get("uuid"),
+                        "uuid_timestamp": existing_package_data.get("uuid_timestamp"),
                         "message": shipment.get("lastState", {}).get(
                             "status", "No status available"
                         ),
