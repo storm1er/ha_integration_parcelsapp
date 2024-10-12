@@ -94,6 +94,7 @@ class ParcelsAppCoordinator(DataUpdateCoordinator):
                         "message": shipment.get("lastState", {}).get(
                             "status", "No status available"
                         ),
+                        "location": shipment.get("lastState", {}).get("location", "undefined"),
                         "origin": shipment.get("origin"),
                         "carrier": shipment.get("detectedCarrier", {}).get("name"),
                         "days_in_transit": next(
@@ -155,6 +156,7 @@ class ParcelsAppCoordinator(DataUpdateCoordinator):
                         "message": shipment.get("lastState", {}).get(
                             "status", "No status available"
                         ),
+                        "location": shipment.get("lastState", {}).get("location", "undefined"),
                         "origin": shipment.get("origin"),
                         "destination": shipment.get("destination"),
                         "carrier": shipment.get("detectedCarrier", {}).get("name"),
