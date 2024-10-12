@@ -108,7 +108,3 @@ class ParcelsAppTrackingSensor(SensorEntity):
             self.coordinator.last_update_success
             and self.tracking_id in self.coordinator.tracked_packages
         )
-
-    async def async_update(self) -> None:
-        """Update the entity."""
-        await self.coordinator.async_request_refresh()
