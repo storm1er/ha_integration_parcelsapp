@@ -45,12 +45,20 @@ class ParcelsAppCoordinator(DataUpdateCoordinator):
         """Load tracked packages from persistent storage."""
         stored_data = await self.store.async_load()
         if stored_data:
+            # Convert uuid_timestamp back to datetime if it's stored as string
+            for package in stored_data.values():
+                if 'uuid_timestamp' in package and isinstance(package['uuid_timestamp'], str):
+                    package['uuid_timestamp'] = datetime.fromisoformat(package['uuid_timestamp'])
             self.tracked_packages = stored_data
         else:
             self.tracked_packages = {}
 
     async def _save_tracked_packages(self):
         """Save tracked packages to persistent storage."""
+        # Convert uuid_timestamp to ISO format string before saving
+        for package in self.tracked_packages.values():
+            if 'uuid_timestamp' in package and isinstance(package['uuid_timestamp'], datetime):
+                package['uuid_timestamp'] = package['uuid_timestamp'].isoformat()
         await self.store.async_save(self.tracked_packages)
         await self.async_request_refresh()
 
@@ -84,9 +92,10 @@ class ParcelsAppCoordinator(DataUpdateCoordinator):
                     package_data = {
                         "status": "pending",
                         "uuid": data["uuid"],
+                        "uuid_timestamp": datetime.now(),
                         "message": "Tracking initiated",
                         "last_updated": datetime.now().isoformat(),
-                        "name": name or self.tracked_packages.get(tracking_id, {}).get("name")
+                        "name": name or self.tracked_packages.get(tracking_id, {}).get("name"),
                     }
                     self.tracked_packages[tracking_id] = package_data
                 elif "shipments" in data and data["shipments"]:
@@ -95,6 +104,7 @@ class ParcelsAppCoordinator(DataUpdateCoordinator):
                     package_data = {
                         "status": shipment.get("status", "unknown"),
                         "uuid": None,
+                        "uuid_timestamp": None,
                         "message": shipment.get("lastState", {}).get(
                             "status", "No status available"
                         ),
@@ -110,7 +120,7 @@ class ParcelsAppCoordinator(DataUpdateCoordinator):
                             None,
                         ),
                         "last_updated": datetime.now().isoformat(),
-                        "name": name or self.tracked_packages.get(tracking_id, {}).get("name")
+                        "name": name or self.tracked_packages.get(tracking_id, {}).get("name"),
                     }
                     self.tracked_packages[tracking_id] = package_data
                 else:
@@ -134,10 +144,20 @@ class ParcelsAppCoordinator(DataUpdateCoordinator):
         else:
             _LOGGER.warning(f"Tracking ID {tracking_id} not found in tracked packages.")
 
-    async def update_package(self, tracking_id: str, uuid: str | None) -> None:
+    async def update_package(self, tracking_id: str, uuid: str | None, uuid_timestamp: datetime | None) -> None:
         """Update a single package."""
-        if uuid is None:
-            # For packages without UUID, we need to use the track_package method again
+        # Check if UUID is expired
+        uuid_expired = False
+        if uuid_timestamp:
+            time_since_uuid = datetime.now() - uuid_timestamp
+            if time_since_uuid > timedelta(minutes=30):
+                uuid_expired = True
+                _LOGGER.debug(f"UUID for {tracking_id} is expired.")
+        else:
+            uuid_expired = True  # No UUID timestamp means we need a new UUID
+
+        if uuid_expired or not uuid:
+            # Re-initiate tracking to get a new UUID
             await self.track_package(tracking_id)
             return
 
@@ -153,7 +173,8 @@ class ParcelsAppCoordinator(DataUpdateCoordinator):
                     existing_name = self.tracked_packages.get(tracking_id, {}).get("name")
                     package_data = {
                         "status": shipment.get("status", "unknown"),
-                        "uuid": uuid,
+                        "uuid": None,  # UUID is no longer needed after data is retrieved
+                        "uuid_timestamp": None,
                         "message": shipment.get("lastState", {}).get(
                             "status", "No status available"
                         ),
@@ -170,7 +191,7 @@ class ParcelsAppCoordinator(DataUpdateCoordinator):
                             None,
                         ),
                         "last_updated": datetime.now().isoformat(),
-                        "name": existing_name
+                        "name": existing_name,
                     }
                     self.tracked_packages[tracking_id] = package_data
                 else:
@@ -183,7 +204,11 @@ class ParcelsAppCoordinator(DataUpdateCoordinator):
         """Update all tracked packages."""
         for tracking_id, package_data in self.tracked_packages.items():
             if package_data.get("status") not in ["delivered", "archived"]:
-                await self.update_package(tracking_id, package_data["uuid"])
+                await self.update_package(
+                    tracking_id,
+                    package_data.get("uuid"),
+                    package_data.get("uuid_timestamp"),
+                )
 
     async def _async_update_data(self):
         """Fetch data from API endpoint and update tracked packages."""
