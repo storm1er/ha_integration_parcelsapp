@@ -101,6 +101,7 @@ class ParcelsAppTrackingSensor(CoordinatorEntity, SensorEntity):
             # Convert last_updated to a more readable format
             if 'last_updated' in attributes:
                 attributes['last_updated'] = attributes['last_updated'].replace('T', ' ')
+            attributes['tracking_id'] = self.tracking_id
             return attributes
         return {}
 
