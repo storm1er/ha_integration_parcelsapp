@@ -49,6 +49,7 @@ class ParcelsAppCoordinator(DataUpdateCoordinator):
     async def _save_tracked_packages(self):
         """Save tracked packages to persistent storage."""
         await self.store.async_save(self.tracked_packages)
+        await self.async_request_refresh()
 
     async def track_package(self, tracking_id: str, name: str = None) -> None:
         """Track a new package or update an existing one."""
@@ -114,8 +115,6 @@ class ParcelsAppCoordinator(DataUpdateCoordinator):
                         f"Unexpected API response for tracking ID {tracking_id}. Response: {response_text}"
                     )
                     return
-
-                await self.async_request_refresh()
         except aiohttp.ClientError as err:
             _LOGGER.error(f"Error tracking package {tracking_id}: {err}")
         except json.JSONDecodeError:
@@ -129,7 +128,6 @@ class ParcelsAppCoordinator(DataUpdateCoordinator):
         if tracking_id in self.tracked_packages:
             del self.tracked_packages[tracking_id]
             await self._save_tracked_packages()
-            await self.async_request_refresh()
         else:
             _LOGGER.warning(f"Tracking ID {tracking_id} not found in tracked packages.")
 
@@ -183,7 +181,6 @@ class ParcelsAppCoordinator(DataUpdateCoordinator):
         for tracking_id, package_data in self.tracked_packages.items():
             if package_data.get("status") not in ["delivered", "archived"]:
                 await self.update_package(tracking_id, package_data["uuid"])
-        await self.async_request_refresh()
 
     async def _async_update_data(self):
         """Fetch data from API endpoint and update tracked packages."""
