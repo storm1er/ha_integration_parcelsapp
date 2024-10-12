@@ -33,6 +33,9 @@ class ParcelsAppCoordinator(DataUpdateCoordinator):
         self.session = aiohttp.ClientSession()
         self.tracked_packages = {}
         self.store = Store(hass, 1, f"{DOMAIN}_{entry.entry_id}_tracked_packages")
+        # Get the first two letters of the language code
+        language_code = (hass.config.language or 'en')[:2].lower()
+        self.language = language_code
 
     async def async_init(self):
         """Initialize the coordinator."""
@@ -62,7 +65,7 @@ class ParcelsAppCoordinator(DataUpdateCoordinator):
                         "destinationCountry": self.destination_country,
                     }
                 ],
-                "language": "en",
+                "language": self.language,
                 "apiKey": self.api_key,
             }
         )
@@ -138,7 +141,7 @@ class ParcelsAppCoordinator(DataUpdateCoordinator):
             await self.track_package(tracking_id)
             return
 
-        url = f"https://parcelsapp.com/api/v3/shipments/tracking?uuid={uuid}&apiKey={self.api_key}"
+        url = f"https://parcelsapp.com/api/v3/shipments/tracking?uuid={uuid}&apiKey={self.api_key}&language={self.language}"
 
         try:
             async with self.session.get(url) as response:
