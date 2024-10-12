@@ -4,9 +4,11 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
 from .coordinator import ParcelsAppCoordinator
+
 
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
@@ -61,12 +63,13 @@ async def async_setup_entry(
     # Store unsub functions to clean up later
     hass.data[DOMAIN][entry.entry_id + "_unsub_dispatcher"] = [unsub_new_package, unsub_remove_package]
 
-class ParcelsAppTrackingSensor(SensorEntity):
+
+class ParcelsAppTrackingSensor(CoordinatorEntity, SensorEntity):
     """Representation of a Parcels App tracking sensor."""
 
     def __init__(self, coordinator: ParcelsAppCoordinator, tracking_id: str, name: str = None) -> None:
         """Initialize the sensor."""
-        self.coordinator = coordinator
+        super().__init__(coordinator)
         self.tracking_id = tracking_id
         self._attr_unique_id = f"{DOMAIN}_tracking_{tracking_id}"
         stored_name = self.coordinator.tracked_packages.get(tracking_id, {}).get("name")

@@ -9,6 +9,7 @@ from homeassistant.components.binary_sensor import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
 from .coordinator import ParcelsAppCoordinator
@@ -22,14 +23,14 @@ async def async_setup_entry(
     async_add_entities([ParcelsAppBinarySensor(coordinator)], True)
 
 
-class ParcelsAppBinarySensor(BinarySensorEntity):
+class ParcelsAppBinarySensor(CoordinatorEntity, BinarySensorEntity):
     """Representation of a Parcels App binary sensor."""
 
     _attr_device_class = BinarySensorDeviceClass.CONNECTIVITY
 
     def __init__(self, coordinator: ParcelsAppCoordinator) -> None:
         """Initialize the binary sensor."""
-        self.coordinator = coordinator
+        super().__init__(coordinator)
         self._attr_unique_id = f"{DOMAIN}_status"
         self._attr_name = "Parcels App Status"
 
@@ -50,12 +51,3 @@ class ParcelsAppBinarySensor(BinarySensorEntity):
                 "response_code": status_data["response_code"],
             }
         return {}
-
-    @property
-    def available(self) -> bool:
-        """Return True if entity is available."""
-        return self.coordinator.last_update_success
-
-    async def async_update(self) -> None:
-        """Update the entity."""
-        await self.coordinator.async_request_refresh()
