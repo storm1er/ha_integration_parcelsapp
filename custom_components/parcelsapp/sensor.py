@@ -3,6 +3,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
+from homeassistant.helpers import entity_registry as er
 
 from .const import DOMAIN
 from .coordinator import ParcelsAppCoordinator
@@ -43,6 +44,12 @@ async def async_setup_entry(
         if entity_to_remove:
             await entity_to_remove.async_remove()
             entities.remove(entity_to_remove)
+
+            # Remove entity from entity registry
+            entity_registry = er.async_get(hass)
+            entity_id = entity_to_remove.entity_id
+            if entity_registry.async_is_registered(entity_id):
+                entity_registry.async_remove(entity_id)
 
     unsub_new_package = async_dispatcher_connect(
         hass, f"{DOMAIN}_new_package", handle_new_package
