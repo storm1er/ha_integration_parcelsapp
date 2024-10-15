@@ -71,9 +71,9 @@ class ParcelsAppTrackingSensor(CoordinatorEntity, SensorEntity):
         """Initialize the sensor."""
         super().__init__(coordinator)
         self.tracking_id = tracking_id
-        self._attr_unique_id = f"{DOMAIN}_tracking_{tracking_id}"
+        self._attr_unique_id = f"tracking_{tracking_id}"
         stored_name = self.coordinator.tracked_packages.get(tracking_id, {}).get("name")
-        self._attr_name = name or stored_name or f"Parcel {tracking_id}"
+        self.name = name or stored_name or f"Parcel {tracking_id}"
 
     @property
     def state(self) -> str | None:
