@@ -114,6 +114,7 @@ class ParcelsAppCoordinator(DataUpdateCoordinator):
                         "location": shipment.get("lastState", {}).get("location", "undefined"),
                         "origin": shipment.get("origin"),
                         "destination": shipment.get("destination"),
+                        "delivered_by": shipment.get("delivered_by"),
                         "carrier": shipment.get("detectedCarrier", {}).get("name"),
                         "days_in_transit": next(
                             (
@@ -179,6 +180,7 @@ class ParcelsAppCoordinator(DataUpdateCoordinator):
                     "location": shipment_data.get("lastState", {}).get("location", "undefined"),
                     "origin": shipment_data.get("origin"),
                     "destination": shipment_data.get("destination"),
+                    "delivered_by": shipment_data.get("delivered_by"),
                     "carrier": shipment_data.get("detectedCarrier", {}).get("name"),
                     "days_in_transit": next(
                         (
@@ -313,6 +315,7 @@ class ParcelsAppCoordinator(DataUpdateCoordinator):
                         "location": shipment.get("lastState", {}).get("location", "undefined"),
                         "origin": shipment.get("origin"),
                         "destination": shipment.get("destination"),
+                        "delivered_by": shipment.get("delivered_by"),
                         "carrier": shipment.get("detectedCarrier", {}).get("name"),
                         "days_in_transit": next(
                             (
