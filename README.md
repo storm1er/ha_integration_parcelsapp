@@ -69,6 +69,7 @@ During setup, you'll need to provide:
 
 1. Your ParcelsApp API key (obtainable from [parcelsapp.com/dashboard](https://parcelsapp.com/dashboard))
 2. Your destination country (the name of your country in your native language)
+3. If you are getting errors, make sure you have answered the email sent from parcelsapp to confirm your account. It may have gone to spam.
 
 ## Usage
 
