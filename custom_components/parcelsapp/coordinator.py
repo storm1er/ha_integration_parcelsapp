@@ -69,7 +69,7 @@ class ParcelsAppCoordinator(DataUpdateCoordinator):
             {
                 "shipments": [
                     {
-                        "trackingId": tracking_id,
+                        "trackingId": str(tracking_id).strip(),
                         "destinationCountry": self.destination_country,
                     }
                 ],
@@ -259,7 +259,7 @@ class ParcelsAppCoordinator(DataUpdateCoordinator):
             {
                 "shipments": [
                     {
-                        "trackingId": tracking_id,
+                        "trackingId": str(tracking_id).strip(),
                         "destinationCountry": self.destination_country,
                     }
                 ],
