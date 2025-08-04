@@ -48,6 +48,7 @@ The `track_package` service creates a sensor for each tracked package with the f
 | location        |	Latest known location of the parcel                                |
 | origin          |	Country of departure                                               |
 | destination     |	Destination country or address                                     |
+| delivered_by    |	Estimated date of delivery / date of delivery                      |
 | carrier         |	Delivery company name                                              |
 | days_in_transit |	Number of days the parcel has been in transit                      |
 | last_updated    |	Timestamp of the latest check by the integration                   |
