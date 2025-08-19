@@ -27,6 +27,7 @@ The integration provides the following services:
 - **Arguments:**
   - `tracking_id` (Required): The parcel's tracking ID provided by your parcel/delivery company.
   - `name` (Optional): An optional name for your parcel (used as the sensor name).
+  - `zipcode` (Optional): The destination zip/postal code for more accurate tracking.
 
 #### `parcelsapp.remove_package`
 
@@ -54,6 +55,7 @@ The `track_package` service creates a sensor for each tracked package with the f
 | last_updated    |	Timestamp of the latest check by the integration                   |
 | name            |	Name given to the parcel (from the name parameter)                 |
 | tracking_id     |	The tracking ID of the parcel                                      |
+| zipcode         |	The destination zip/postal code (if provided)                      |
 
 ## Installation
 

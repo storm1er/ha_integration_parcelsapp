@@ -16,6 +16,13 @@ track_package:
       required: false
       selector:
         text:
+    zipcode:
+      name: Zip Code
+      description: Optional zip/postal code for more accurate tracking
+      example: "12345"
+      required: false
+      selector:
+        text:
 
 remove_package:
   name: Remove Package
