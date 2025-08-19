@@ -123,6 +123,7 @@ class ParcelsAppCoordinator(DataUpdateCoordinator):
                             ),
                             None,
                         ),
+                        "delivered_by": shipment.get("delivered_by"),
                         "last_updated": datetime.now().isoformat(),
                         "name": name or existing_package_data.get("name"),
                     }
@@ -188,6 +189,7 @@ class ParcelsAppCoordinator(DataUpdateCoordinator):
                         ),
                         None,
                     ),
+                    "delivered_by": shipment_data.get("delivered_by"),
                     "last_updated": datetime.now().isoformat(),
                 }
                 self.tracked_packages[tracking_id] = package_data
@@ -322,6 +324,7 @@ class ParcelsAppCoordinator(DataUpdateCoordinator):
                             ),
                             None,
                         ),
+                        "delivered_by": shipment.get("delivered_by"),
                         "last_updated": datetime.now().isoformat(),
                     }
                     self.tracked_packages[tracking_id] = package_data

@@ -50,6 +50,7 @@ The `track_package` service creates a sensor for each tracked package with the f
 | destination     |	Destination country or address                                     |
 | carrier         |	Delivery company name                                              |
 | days_in_transit |	Number of days the parcel has been in transit                      |
+| delivered_by    |	Estimated date of delivery                                         |
 | last_updated    |	Timestamp of the latest check by the integration                   |
 | name            |	Name given to the parcel (from the name parameter)                 |
 | tracking_id     |	The tracking ID of the parcel                                      |
