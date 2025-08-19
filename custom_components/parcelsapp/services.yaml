@@ -35,3 +35,7 @@ remove_package:
       required: true
       selector:
         text:
+
+prune_packages:
+  name: Prune Old Packages
+  description: Remove packages that haven't been updated in over 2 months

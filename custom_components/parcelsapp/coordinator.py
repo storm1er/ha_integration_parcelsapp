@@ -153,6 +153,39 @@ class ParcelsAppCoordinator(DataUpdateCoordinator):
         else:
             _LOGGER.warning(f"Tracking ID {tracking_id} not found in tracked packages.")
 
+    async def prune_packages(self) -> list[str]:
+        """Remove packages that haven't been updated in over 2 months.
+        
+        Returns list of tracking IDs that were pruned.
+        """
+        from datetime import timedelta
+        
+        packages_to_remove = []
+        two_months_ago = datetime.now() - timedelta(days=60)
+        
+        for tracking_id, package_data in self.tracked_packages.items():
+            last_updated = package_data.get("last_updated")
+            if last_updated:
+                # Convert to datetime if it's a string
+                if isinstance(last_updated, str):
+                    last_updated_dt = datetime.fromisoformat(last_updated.replace(' ', 'T'))
+                else:
+                    last_updated_dt = last_updated
+                
+                if last_updated_dt < two_months_ago:
+                    packages_to_remove.append(tracking_id)
+                    _LOGGER.info(f"Pruning package {tracking_id} - last updated {last_updated}")
+        
+        # Remove the packages
+        for tracking_id in packages_to_remove:
+            del self.tracked_packages[tracking_id]
+        
+        if packages_to_remove:
+            await self._save_tracked_packages()
+        
+        _LOGGER.info(f"Pruned {len(packages_to_remove)} old packages")
+        return packages_to_remove
+
     async def update_package(self, tracking_id: str, uuid: str | None, uuid_timestamp: datetime | None) -> None:
         """Update a single package."""
         # Ensure uuid_timestamp is a datetime object
