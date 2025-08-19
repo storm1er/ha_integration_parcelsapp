@@ -20,7 +20,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     async def handle_track_package(call: ServiceCall) -> None:
         tracking_id = call.data["tracking_id"]
         name = call.data.get("name")
-        await coordinator.track_package(tracking_id, name)
+        zipcode = call.data.get("zipcode")
+        await coordinator.track_package(tracking_id, name, zipcode)
 
         # Notify sensor platform to add the new entity
         async_dispatcher_send(hass, f"{DOMAIN}_new_package", tracking_id)
