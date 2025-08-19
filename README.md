@@ -36,6 +36,12 @@ The integration provides the following services:
 
 Use the `parcelsapp.remove_package` service to remove a package from tracking. This will delete the associated sensor and stop any further updates for that package.
 
+#### `parcelsapp.prune_packages`
+
+- **Arguments:** None
+
+Use the `parcelsapp.prune_packages` service to automatically remove packages that haven't been updated in over 2 months. This helps keep your tracked packages list clean by removing old, inactive tracking entries.
+
 ### Tracking Sensor
 
 The `track_package` service creates a sensor for each tracked package with the following attributes:
