@@ -27,6 +27,7 @@ The integration provides the following services:
 - **Arguments:**
   - `tracking_id` (Required): The parcel's tracking ID provided by your parcel/delivery company.
   - `name` (Optional): An optional name for your parcel (used as the sensor name).
+  - `zipcode` (Optional): The destination zip/postal code for more accurate tracking.
 
 #### `parcelsapp.remove_package`
 
@@ -34,6 +35,12 @@ The integration provides the following services:
   - `tracking_id` (Required): The tracking ID of the package you wish to stop tracking.
 
 Use the `parcelsapp.remove_package` service to remove a package from tracking. This will delete the associated sensor and stop any further updates for that package.
+
+#### `parcelsapp.prune_packages`
+
+- **Arguments:** None
+
+Use the `parcelsapp.prune_packages` service to automatically remove packages that haven't been updated in over 2 months. This helps keep your tracked packages list clean by removing old, inactive tracking entries.
 
 ### Tracking Sensor
 
@@ -50,9 +57,11 @@ The `track_package` service creates a sensor for each tracked package with the f
 | destination     |	Destination country or address                                     |
 | carrier         |	Delivery company name                                              |
 | days_in_transit |	Number of days the parcel has been in transit                      |
+| delivered_by    |	Estimated date of delivery                                         |
 | last_updated    |	Timestamp of the latest check by the integration                   |
 | name            |	Name given to the parcel (from the name parameter)                 |
 | tracking_id     |	The tracking ID of the parcel                                      |
+| zipcode         |	The destination zip/postal code (if provided)                      |
 
 ## Installation
 
