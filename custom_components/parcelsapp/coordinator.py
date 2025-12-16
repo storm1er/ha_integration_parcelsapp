@@ -62,17 +62,19 @@ class ParcelsAppCoordinator(DataUpdateCoordinator):
         await self.store.async_save(self.tracked_packages)
         await self.async_request_refresh()
 
-    async def track_package(self, tracking_id: str, name: str = None) -> None:
+    async def track_package(self, tracking_id: str, name: str = None, zipcode: str = None) -> None:
         """Track a new package or update an existing one."""
         url = "https://parcelsapp.com/api/v3/shipments/tracking"
+        shipment_data = {
+            "trackingId": str(tracking_id).strip(),
+            "destinationCountry": self.destination_country,
+        }
+        if zipcode:
+            shipment_data["zipcode"] = zipcode
+        
         payload = json.dumps(
             {
-                "shipments": [
-                    {
-                        "trackingId": tracking_id,
-                        "destinationCountry": self.destination_country,
-                    }
-                ],
+                "shipments": [shipment_data],
                 "language": self.language,
                 "apiKey": self.api_key,
             }
@@ -98,6 +100,7 @@ class ParcelsAppCoordinator(DataUpdateCoordinator):
                         "message": "Tracking initiated",
                         "last_updated": datetime.now().isoformat(),
                         "name": name or existing_package_data.get("name"),
+                        "zipcode": zipcode or existing_package_data.get("zipcode"),
                     }
                     self.tracked_packages[tracking_id] = package_data
                 elif "shipments" in data and data["shipments"]:
@@ -123,8 +126,10 @@ class ParcelsAppCoordinator(DataUpdateCoordinator):
                             ),
                             None,
                         ),
+                        "delivered_by": shipment.get("delivered_by"),
                         "last_updated": datetime.now().isoformat(),
                         "name": name or existing_package_data.get("name"),
+                        "zipcode": zipcode or existing_package_data.get("zipcode"),
                     }
                     self.tracked_packages[tracking_id] = package_data
                 else:
@@ -147,6 +152,39 @@ class ParcelsAppCoordinator(DataUpdateCoordinator):
             await self._save_tracked_packages()
         else:
             _LOGGER.warning(f"Tracking ID {tracking_id} not found in tracked packages.")
+
+    async def prune_packages(self) -> list[str]:
+        """Remove packages that haven't been updated in over 2 months.
+        
+        Returns list of tracking IDs that were pruned.
+        """
+        from datetime import timedelta
+        
+        packages_to_remove = []
+        two_months_ago = datetime.now() - timedelta(days=60)
+        
+        for tracking_id, package_data in self.tracked_packages.items():
+            last_updated = package_data.get("last_updated")
+            if last_updated:
+                # Convert to datetime if it's a string
+                if isinstance(last_updated, str):
+                    last_updated_dt = datetime.fromisoformat(last_updated.replace(' ', 'T'))
+                else:
+                    last_updated_dt = last_updated
+                
+                if last_updated_dt < two_months_ago:
+                    packages_to_remove.append(tracking_id)
+                    _LOGGER.info(f"Pruning package {tracking_id} - last updated {last_updated}")
+        
+        # Remove the packages
+        for tracking_id in packages_to_remove:
+            del self.tracked_packages[tracking_id]
+        
+        if packages_to_remove:
+            await self._save_tracked_packages()
+        
+        _LOGGER.info(f"Pruned {len(packages_to_remove)} old packages")
+        return packages_to_remove
 
     async def update_package(self, tracking_id: str, uuid: str | None, uuid_timestamp: datetime | None) -> None:
         """Update a single package."""
@@ -188,6 +226,7 @@ class ParcelsAppCoordinator(DataUpdateCoordinator):
                         ),
                         None,
                     ),
+                    "delivered_by": shipment_data.get("delivered_by"),
                     "last_updated": datetime.now().isoformat(),
                 }
                 self.tracked_packages[tracking_id] = package_data
@@ -255,14 +294,19 @@ class ParcelsAppCoordinator(DataUpdateCoordinator):
     async def get_new_uuid(self, tracking_id: str):
         """Get a new UUID for a tracking ID or update package data if shipment info is returned."""
         url = "https://parcelsapp.com/api/v3/shipments/tracking"
+        
+        # Get existing package data to retrieve zipcode if it exists
+        existing_package_data = self.tracked_packages.get(tracking_id, {})
+        shipment_data = {
+            "trackingId": str(tracking_id).strip(),
+            "destinationCountry": self.destination_country,
+        }
+        if existing_package_data.get("zipcode"):
+            shipment_data["zipcode"] = existing_package_data["zipcode"]
+        
         payload = json.dumps(
             {
-                "shipments": [
-                    {
-                        "trackingId": tracking_id,
-                        "destinationCountry": self.destination_country,
-                    }
-                ],
+                "shipments": [shipment_data],
                 "language": self.language,
                 "apiKey": self.api_key,
             }
@@ -322,6 +366,7 @@ class ParcelsAppCoordinator(DataUpdateCoordinator):
                             ),
                             None,
                         ),
+                        "delivered_by": shipment.get("delivered_by"),
                         "last_updated": datetime.now().isoformat(),
                     }
                     self.tracked_packages[tracking_id] = package_data

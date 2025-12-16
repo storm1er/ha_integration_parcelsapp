@@ -3,7 +3,7 @@ from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 
-from .const import DOMAIN, SERVICE_TRACK_PACKAGE, SERVICE_REMOVE_PACKAGE
+from .const import DOMAIN, SERVICE_TRACK_PACKAGE, SERVICE_REMOVE_PACKAGE, SERVICE_PRUNE_PACKAGES
 from .coordinator import ParcelsAppCoordinator
 
 PLATFORMS = [Platform.BINARY_SENSOR, Platform.SENSOR, Platform.BUTTON]
@@ -20,7 +20,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     async def handle_track_package(call: ServiceCall) -> None:
         tracking_id = call.data["tracking_id"]
         name = call.data.get("name")
-        await coordinator.track_package(tracking_id, name)
+        zipcode = call.data.get("zipcode")
+        await coordinator.track_package(tracking_id, name, zipcode)
 
         # Notify sensor platform to add the new entity
         async_dispatcher_send(hass, f"{DOMAIN}_new_package", tracking_id)
@@ -35,6 +36,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         async_dispatcher_send(hass, f"{DOMAIN}_remove_package", tracking_id)
 
     hass.services.async_register(DOMAIN, SERVICE_REMOVE_PACKAGE, handle_remove_package)
+
+    async def handle_prune_packages(call: ServiceCall) -> None:
+        pruned_packages = await coordinator.prune_packages()
+        
+        # Notify sensor platform to remove entities for each pruned package
+        for tracking_id in pruned_packages:
+            async_dispatcher_send(hass, f"{DOMAIN}_remove_package", tracking_id)
+
+    hass.services.async_register(DOMAIN, SERVICE_PRUNE_PACKAGES, handle_prune_packages)
 
     return True
 
